@@ -1,0 +1,154 @@
+{
+    "socrate": {
+        "citazione": "\"So di non sapere\"",
+        "epoca": -469
+    },
+    "platone": {
+        "citazione": "\"La prima e più grande vittoria di tutte è conquistare se stessi\"",
+        "epoca": -428
+    },
+    "talete": {
+        "citazione": "\"L'acqua è il principio di tutte le cose\"",
+        "epoca": -625
+    },
+    "epicuro": {
+        "citazione": "\"La felicità è l'essenza del dolore\"",
+        "epoca": -341
+    },
+    "anassagora": {
+        "citazione": "\"Nessuna cosa nasce e nessuna perisce, ma ogni cosa si compone insieme da cose già esistenti e da cose già esistenti si scioglie\"",
+        "epoca": -500
+    },
+    "anassimene": {
+        "citazione": "\"Come l'anima nostra, che è aria che ci tiene insieme, così il soffio e l'aria abbracciano tutto il mondo\"",
+        "epoca": -585
+    },
+    "democrito": {
+        "citazione": "\"Nulla si crea dal nulla ne si distrugge nel nulla\" Sviluppa la teoria atomistica fandata da Leucippo.",
+        "epoca": -460
+    },
+    "empedocle": {
+        "citazione": "\"La materia è composta da Fuoco, Acqua, Aria e Terra\"",
+        "epoca": -490
+    },
+    "eraclito": {
+        "citazione": "\"Panta rhei, ovvero Tutto scorre\"",
+        "epoca": -540
+    },
+    "parmenide": {
+        "citazione": "\"L'essere è e non può in alcun modo non essere. Il non essere non è e non può in alcun modo essere\"",
+        "epoca": -515
+    },
+    "zenone": {
+        "citazione": "\"Abbiamo due orecchie e una sola bocca, per giustamente ascoltare di più e parlare di meno\" Filosofo dei paradossi.",
+        "epoca": -490
+    },
+    "anassimandro": {
+        "citazione": "\"si pagano l'un all'altro il fio secondo l'ordine del tempo\"",
+        "epoca": -610
+    },
+    "pitagora": {
+        "citazione": "\"Il numero è l'essenza della realtà\"",
+        "epoca": -570
+    },
+    "zz_mitologia": {
+        "citazione": "\"L'insieme di narrazioni, miti e leggende greche per spiegare l'origine del mondo, i fenomeni naturali e le vicende umane\"",
+        "epoca": -900
+    },
+    "zz_la filosofia": {
+        "citazione": "\"L'indagine razionale e critica sui fondamenti dell'esistenza, del pensiero e della realtà\"",
+        "epoca": -700
+    },
+    "aristotele": {
+        "citazione": "\"Noi siamo quello che facciamo, sempre. L'eccellenza non è un atto ma un'abitudine\".",
+        "epoca": -384
+    },
+    "zz_correnti filosofiche": {
+        "citazione": "",
+        "epoca": 0
+    },
+    "zz_correnti filosofiche_stoicismo": {
+        "citazione": "\"Gli uomini non hanno paura delle cose, ma di come le vedono\"",
+        "epoca": -300
+    },
+    "zz_correnti filosofiche_stoicismo_seneca": {
+        "citazione": "\"Non è vero che abbiamo poco tempo: la verità è che ne perdiamo molto\"",
+        "epoca": -4
+    },
+    "zz_correnti filosofiche_stoicismo_seneca_le lettere a lucilium": {
+        "citazione": "",
+        "epoca": 0
+    },
+    "zz_correnti filosofiche_stoicismo_epitteto": {
+        "citazione": "\"Non sono le cose in sè a turbare gli uomini, ma i giudizi che gli uomini formulano su di esse\"",
+        "epoca": 50
+    },
+    "zz_correnti filosofiche_stoicismo_marco aurelio": {
+        "citazione": "\"Non agire come se dovessi vivere diecimila anni. La morte incombe su di te. Mentre vivi, mentre è nelle tue mani, sii buono\"",
+        "epoca": 121
+    },
+    "zz_correnti filosofiche_scetticismo": {
+        "citazione": "\"Pur accettando l'impossibilità della verità assoluta, si può agire sulla base del più probabile o del più ragionevole\"",
+        "epoca": -400
+    },
+    "zz_correnti filosofiche_scetticismo_pirrone": {
+        "citazione": "\"Nulla è né bello né brutto, né giusto né ingiusto, e che tutto si equivale\"",
+        "epoca": -365
+    },
+    "zz_correnti filosofiche_scetticismo_arcesilao": {
+        "citazione": "\"Il saggio non deve dare assenso su nulla per mancanza di evidenze\"",
+        "epoca": -315
+    },
+    "zz_correnti filosofiche_scetticismo_carneade": {
+        "citazione": "\"Chi era costui?\"",
+        "epoca": 0
+    },
+    "zz_la metafisica_l'origine": {
+        "citazione": "\"Gli uomini, sia da principio sia ora, hanno incominciato ad esercitare la filosofia attraverso la meraviglia\"",
+        "epoca": -400
+    },
+    "zz_la metafisica_le critiche di kant": {
+        "citazione": "\"La metafisica non può essere una scienza perché tenta di conoscere oggetti(Dio, anima, mondo come totalita') trascendenti l'esperienza sensibile\"",
+        "epoca": 1781
+    },
+    "zz_la metafisica_il pensiero di schopenhauer": {
+        "citazione": "\"Un tentativo artificiale e spesso ingannevole di razionalizzare il mondo, definita metafisica per il popolo\"",
+        "epoca": 1819
+    },
+    "zz_la metafisica_il pensiero di nietzsche": {
+        "citazione": "\"Rifiuto radicale dei mondi retrostanti: Dio, l'anima, l'essere,considerati invenzioni nate dalla stanchezza e dal disprezzo per la vita terrena\"",
+        "epoca": 1819
+    },
+    "zz_correnti filosofiche_epicureismo": {
+        "citazione": "\"La morte non è nulla per noi, perché quando siamo la morte non è venuta. E da dove è venuta la morte, noi non siamo\"",
+        "epoca": -307
+    },
+    "zz_correnti filosofiche_sofisti e retori": {
+        "citazione": "\"L'uomo è misura di tutte le cose, di quelle che sono per ciò che sono, e di quelle che non sono per ciò che non sono\"",
+        "epoca": -500
+    },
+    "zz_la filosofia contemporanea": {
+        "citazione": "Si sviluppa tra la fine del XIX secolo e il Novecento, segna una tottura con i grandi sistemi idealisti, afforntando la crisi delle certezze e la svolta linguistica.",
+        "epoca": 1800
+    },
+    "zz_la filosofia contemporanea_umberto galimberti": {
+        "citazione": "L'amore non è possesso, perché il possesso non tende al bene dell'altro, né alla lealtà verso l'altro, ma solo al mantenimento della relazione, che, lungi dal garantire la felicità, che é sempre nella ricerca e nella conoscenza di sé, la sacrifica in cambio di sicurezza.",
+        "epoca": 1942
+    },
+    "zz_la filosofia delle religioni": {
+        "citazione": "\"Le religioni sono come le lucciole: hanno bisogno della tenebra per splendere\"",
+        "epoca": -1200
+    },
+    "zz_quaderno filosofico di corrado tafaro": {
+        "citazione": "Esplorazione senza vincoli rigidi per un approccio autentico e personale. Non una linea retta, ma un movimento libero che segue la curiosità e l’intuizione. Ogni frammento che incontri diventa un tassello di una riflessione più grande, anche se la totalità rimane sempre sfuggente, come diceva Karl Jaspers con il concetto di Onniabbracciante.",
+        "epoca": 2024
+    },
+    "zz_la filosofia moderna": {
+        "citazione": "\"La filosofia moderna si sviluppa tra il XV e il XVIII secolo, segna il passaggio dal pensiero teocentrico medievale all'antropocentrismo, ponendo al centro l'individuo\"",
+        "epoca": 1500
+    },
+    "zz_la filosofia politica e antropologica": {
+        "citazione": "\"La filosofia politica e antropologica indaga il legame tra la natura umana (antropologia) e l'organizzazione del potere (politica), analizzando come l'idea di \"uomo\" influenzi le forme di governo\".",
+        "epoca": -500
+    }
+}
