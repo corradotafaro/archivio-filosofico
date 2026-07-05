@@ -15,6 +15,21 @@ def carica_database():
 
 db = carica_database()
 
+# --- FUNZIONE PER LEGGERE I FILE .ODT DI LIBREOFFICE ---
+from odf import text, teletype
+from odf.opendocument import load
+
+def leggi_testo_odt(percorso_file):
+    try:
+        doc = load(percorso_file)
+        paragrafi = doc.getElementsByType(text.P)
+        testo_completo = []
+        for p in paragrafi:
+            testo_completo.append(teletype.extractText(p))
+        return "\n".join(testo_completo)
+    except Exception as e:
+        return f"Errore nella lettura del file LibreOffice: {e}"
+    
 # --- CARTELLA APPROFONDIMENTI ---
 CARTELLA_APPROFONDIMENTI = "approfondimenti"
 
@@ -22,6 +37,26 @@ CARTELLA_APPROFONDIMENTI = "approfondimenti"
 st.sidebar.title("📚 Menu Archivio")
 st.sidebar.write("Naviga tra le funzioni dell'app")
 funzione_scelta = st.sidebar.radio("Seleziona un'azione:", ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti"])
+
+# --- NOTA PERSONALE E PRESENTAZIONE (AGGIUNTA) ---
+st.sidebar.divider()
+st.sidebar.markdown("### 🏛️ Il Progetto")
+
+# Dedica in memoria
+st.sidebar.markdown("""
+> *In memoria di Giusi Miccichè, compagna di vita e di studi.*
+>
+> *Il nostro destino ineluttabile ci costringe ad essere in questa terra solo spettatori in transito, arriviamo come ospiti inattesi e ce ne andiamo come ombre, attraversiamo la vita come una scena che non si ripete, consapevoli che ogni incontro, ogni gesto, ogni istante è già sul punto di svanire.*
+""")
+
+# Presentazione del percorso e della filosofia
+st.sidebar.markdown("""
+La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspetti della vita di oggi.
+
+I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per molte delle idee e dei concetti che ancora oggi formano il cuore del pensamento filosofico. La capacità di pensare in modo più profondo, critico e riflessivo ha portato ad indagare la natura, la conoscenza, l'esistenza, il bene e il male, e molti altri aspetti della realtà come la scienza, la matematica, l’etica e la politica.
+
+**Corrado Tafaro**
+""")
 
 # --- SEZIONE 1: CERCA NELL'ARCHIVIO ---
 if funzione_scelta == "Cerca nell'Archivio":
@@ -64,30 +99,34 @@ if funzione_scelta == "Cerca nell'Archivio":
                                 percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
                                 file_trovati.append((f_name, percorso_completo))
                     
-                    # Mostriamo l'elenco di tutti i file trovati
+                    # Mostriamo l'elenco di tutti i file trovati con opzione Leggi e Scarica
                     if file_trovati:
                         st.write(f"📄 **Approfondimenti disponibili ({len(file_trovati)}):**")
                         
-                        # Ordiniamo i file alfabeticamente per comodità
                         for f_name, percorso_completo in sorted(file_trovati):
-                            # Creiamo una riga pulita con il nome del file e il suo rispettivo bottone
-                            col1, col2 = st.columns([3, 1])
+                            col1, col2, col3 = st.columns([2, 1, 1])
                             with col1:
                                 st.write(f"🔹 {f_name}")
                             with col2:
+                                if st.button("Leggi", key=f"read_{nome}_{f_name}"):
+                                    testo_estratto = leggi_testo_odt(percorso_completo)
+                                    st.info(f"--- Inizio Contenuto: {f_name} ---")
+                                    st.write(testo_estratto)
+                                    st.info("--- Fine Contenuto ---")
+                            with col3:
                                 with open(percorso_completo, "rb") as f:
                                     st.download_button(
                                         label="Scarica",
                                         data=f,
                                         file_name=f_name,
                                         mime="application/vnd.oasis.opendocument.text",
-                                        key=f"dl_{nome}_{f_name}" # Chiave unica combinata per evitare conflitti
+                                        key=f"dl_{nome}_{f_name}"
                                     )
                     else:
                         st.caption("Nessun file di approfondimento .odt trovato automaticamente per questo autore.")
         else:
             st.warning("Nessun elemento trovato corrispondente alla ricerca.")
-
+            
 # --- SEZIONE 2: L'ORACOLO ---
 elif funzione_scelta == "Invoca l'Oracolo":
     st.title("🔮 L'Oracolo")
@@ -118,17 +157,23 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
         if file_presenti:
             for file_odt in sorted(file_presenti):
                 percorso_file = os.path.join(CARTELLA_APPROFONDIMENTI, file_odt)
-                col1, col2 = st.columns([3, 1])
+                col1, col2, col3 = st.columns([2, 1, 1])
                 with col1:
                     st.write(f"🔹 {file_odt}")
                 with col2:
+                    if st.button("Leggi", key=f"sfoglia_read_{file_odt}"):
+                        testo_estratto = leggi_testo_odt(percorso_file)
+                        st.info(f"--- Inizio Contenuto: {file_odt} ---")
+                        st.write(testo_estratto)
+                        st.info("--- Fine Contenuto ---")
+                with col3:
                     with open(percorso_file, "rb") as f:
                         st.download_button(
                             label="Scarica",
                             data=f,
                             file_name=file_odt,
                             mime="application/vnd.oasis.opendocument.text",
-                            key=f"sfoglia_{file_odt}"
+                            key=f"sfoglia_dl_{file_odt}"
                         )
         else:
             st.info("Non ci sono file .odt nella cartella 'approfondimenti'.")
