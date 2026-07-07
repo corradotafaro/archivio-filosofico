@@ -51,7 +51,7 @@ st.sidebar.markdown("""
 
 # Presentazione del percorso e della filosofia
 st.sidebar.markdown("""
-La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspetti della vita di oggi.
+La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspects della vita di oggi.
 
 I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per molte delle idee e dei concetti che ancora oggi formano il cuore del pensamento filosofico. La capacità di pensare in modo più profondo, critico e riflessivo ha portato ad indagare la natura, la conoscenza, l'esistenza, il bene e il male, e molti altri aspetti della realtà come la scienza, la matematica, l’etica e la politica.
 
@@ -105,14 +105,16 @@ if funzione_scelta == "Cerca nell'Archivio":
                         
                         for f_name, percorso_completo in sorted(file_trovati):
                             col1, col2, col3 = st.columns([2, 1, 1])
+                            
+                            mostra_testo = False
+                            
                             with col1:
                                 st.write(f"🔹 {f_name}")
+                                
                             with col2:
                                 if st.button("Leggi", key=f"read_{nome}_{f_name}"):
-                                    testo_estratto = leggi_testo_odt(percorso_completo)
-                                    st.info(f"--- Inizio Contenuto: {f_name} ---")
-                                    st.write(testo_estratto)
-                                    st.info("--- Fine Contenuto ---")
+                                    mostra_testo = True
+                                    
                             with col3:
                                 with open(percorso_completo, "rb") as f:
                                     st.download_button(
@@ -122,6 +124,15 @@ if funzione_scelta == "Cerca nell'Archivio":
                                         mime="application/vnd.oasis.opendocument.text",
                                         key=f"dl_{nome}_{f_name}"
                                     )
+                            
+                            # Visualizzazione del testo fuori dalle colonne (Piena Larghezza)
+                            if mostra_testo:
+                                testo_estratto = leggi_testo_odt(percorso_completo)
+                                st.write("")
+                                st.info(f"--- Inizio Contenuto: {f_name} ---")
+                                st.write(testo_estratto)
+                                st.info("--- Fine Contenuto ---")
+                                st.write("")
                     else:
                         st.caption("Nessun file di approfondimento .odt trovato automaticamente per questo autore.")
         else:
@@ -158,14 +169,14 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
             for file_odt in sorted(file_presenti):
                 percorso_file = os.path.join(CARTELLA_APPROFONDIMENTI, file_odt)
                 col1, col2, col3 = st.columns([2, 1, 1])
+                
+                mostra_testo_sfoglia = False
+                
                 with col1:
                     st.write(f"🔹 {file_odt}")
                 with col2:
                     if st.button("Leggi", key=f"sfoglia_read_{file_odt}"):
-                        testo_estratto = leggi_testo_odt(percorso_file)
-                        st.info(f"--- Inizio Contenuto: {file_odt} ---")
-                        st.write(testo_estratto)
-                        st.info("--- Fine Contenuto ---")
+                        mostra_testo_sfoglia = True
                 with col3:
                     with open(percorso_file, "rb") as f:
                         st.download_button(
@@ -175,6 +186,15 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
                             mime="application/vnd.oasis.opendocument.text",
                             key=f"sfoglia_dl_{file_odt}"
                         )
+                
+                # Visualizzazione a tutta larghezza anche nella sezione Sfoglia
+                if mostra_testo_sfoglia:
+                    testo_estratto = leggi_testo_odt(percorso_file)
+                    st.write("")
+                    st.info(f"--- Inizio Contenuto: {file_odt} ---")
+                    st.write(testo_estratto)
+                    st.info("--- Fine Contenuto ---")
+                    st.write("")
         else:
             st.info("Non ci sono file .odt nella cartella 'approfondimenti'.")
     else:
