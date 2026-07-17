@@ -2,6 +2,8 @@ import streamlit as st
 import json
 import random
 import os
+from odf import text
+from odf.opendocument import load
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
@@ -15,20 +17,67 @@ def carica_database():
 
 db = carica_database()
 
-# --- FUNZIONE PER LEGGERE I FILE .ODT DI LIBREOFFICE ---
-from odf import text, teletype
-from odf.opendocument import load
-
+# --- NUOVA FUNZIONE EVOLUTA PER LEGGERE I FILE .ODT (CON TITOLI E NOTE SEPARATI) ---
 def leggi_testo_odt(percorso_file):
     try:
         doc = load(percorso_file)
-        paragrafi = doc.getElementsByType(text.P)
-        testo_completo = []
-        for p in paragrafi:
-            testo_completo.append(teletype.extractText(p))
-        return "\n".join(testo_completo)
+        
+        titolo_rilevato = ""
+        testo_principale = []
+        note_pie_pagina = []
+        contatore_note = 1
+
+        # Scorriamo tutti i paragrafi del documento ODT
+        for paragrafo in doc.getElementsByType(text.P):
+            stile_paragrafo = paragrafo.getAttribute("stylename")
+            testo_paragrafo = ""
+            
+            # Analizziamo ogni singolo frammento all'interno del paragrafo
+            for nodo in paragrafo.childNodes:
+                # Se è testo normale
+                if nodo.nodeType == nodo.TEXT_NODE:
+                    testo_paragrafo += str(nodo.data)
+                    
+                # Se è una nota a piè di pagina (tag text:note)
+                elif nodo.nodeType == nodo.ELEMENT_NODE and nodo.tagName == "text:note":
+                    # Inseriamo un rimando pulito nel testo corrente: es. [1]
+                    testo_paragrafo += f" **[{contatore_note}]**"
+                    
+                    # Estraiamo il testo nascosto all'interno di quella specifica nota
+                    testo_della_nota = ""
+                    for contenuto_nota in nodo.getElementsByType(text.P):
+                        for frammento in contenuto_nota.childNodes:
+                            if frammento.nodeType == frammento.TEXT_NODE:
+                                testo_della_nota += str(frammento.data)
+                    
+                    # Salviamo la nota nella lista per il fondo pagina
+                    note_pie_pagina.append(f"**[{contatore_note}]** {testo_della_nota.strip()}")
+                    contatore_note += 1
+
+            # Pulizia degli spazi
+            testo_paragrafo = testo_paragrafo.strip()
+            if not testo_paragrafo:
+                continue
+
+            # Rilevamento automatico del Titolo (Se ha stile "Heading" o se è la primissima riga del saggio)
+            if (stile_paragrafo and "Heading" in stile_paragrafo) or (not titolo_rilevato and testo_paragrafo):
+                if not titolo_rilevato:
+                    titolo_rilevato = testo_paragrafo
+                    continue # Evitiamo di inserire il titolo anche dentro il corpo del testo
+
+            testo_principale.append(testo_paragrafo)
+
+        # Se il file non ha intestazioni interne, usa il nome del file pulito come titolo
+        if not titolo_rilevato:
+            nome_file = os.path.basename(percorso_file)
+            titolo_rilevato = nome_file.replace(".odt", "").replace("_", " ")
+
+        corpo_testo_pulito = "\n\n".join(testo_principale)
+        
+        return titolo_rilevato, corpo_testo_pulito, note_pie_pagina
+
     except Exception as e:
-        return f"Errore nella lettura del file LibreOffice: {e}"
+        return "Errore", f"Errore nella lettura del file LibreOffice: {e}", []
     
 # --- CARTELLA APPROFONDIMENTI ---
 CARTELLA_APPROFONDIMENTI = "approfondimenti"
@@ -38,7 +87,7 @@ st.sidebar.title("📚 Menu Archivio")
 st.sidebar.write("Naviga tra le funzioni dell'app")
 funzione_scelta = st.sidebar.radio("Seleziona un'azione:", ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti"])
 
-# --- NOTA PERSONALE E PRESENTAZIONE (AGGIUNTA) ---
+# --- NOTA PERSONALE E PRESENTAZIONE ---
 st.sidebar.divider()
 st.sidebar.markdown("### 🏛️ Il Progetto")
 
@@ -46,12 +95,12 @@ st.sidebar.markdown("### 🏛️ Il Progetto")
 st.sidebar.markdown("""
 > *In memoria di Giusi Miccichè, compagna di vita e di studi.*
 >
-> *Il nostro destino ineluttabile ci costringe ad essere in questa terra solo spettatori in transito, arriviamo come ospiti inattesi e ce ne andiamo come ombre, attraversiamo la vita come una scena che non si ripete, consapevoli che ogni incontro, ogni gesto, ogni istante è già sul punto di svanire.*
+> *Il nostro destino ineluttabile ci costringe ad essere in questa terra solo spettatori in transito, arriviamo como ospiti inattesi e ce ne andiamo come ombre, attraversiamo la vita come una scena che non si ripete, consapevoli che ogni incontro, ogni gesto, ogni istante è già sul punto di svanire.*
 """)
 
 # Presentazione del percorso e della filosofia
 st.sidebar.markdown("""
-La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspects della vita di oggi.
+La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspetti della vita di oggi.
 
 I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per molte delle idee e dei concetti che ancora oggi formano il cuore del pensamento filosofico. La capacità di pensare in modo più profondo, critico e riflessivo ha portato ad indagare la natura, la conoscenza, l'esistenza, il bene e il male, e molti altri aspetti della realtà come la scienza, la matematica, l’etica e la politica.
 
@@ -78,7 +127,6 @@ if funzione_scelta == "Cerca nell'Archivio":
             st.success(f"Trovati {len(risultati)} risultati:")
             for nome, dettagli in risultati:
                 with st.expander(f"📌 {nome}"):
-                    # Mostra i dettagli del JSON
                     if isinstance(dettagli, dict):
                         for k, v in dettagli.items():
                             st.write(f"**{k.capitalize()}**: {v}")
@@ -93,27 +141,24 @@ if funzione_scelta == "Cerca nell'Archivio":
                     if os.path.exists(CARTELLA_APPROFONDIMENTI):
                         tutti_i_file = os.listdir(CARTELLA_APPROFONDIMENTI)
                         
-                        # Raccogliamo TUTTI i file che contengono il nome del filosofo
                         for f_name in tutti_i_file:
                             if f_name.endswith('.odt') and nome.lower() in f_name.lower():
                                 percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
                                 file_trovati.append((f_name, percorso_completo))
                     
-                    # Mostriamo l'elenco di tutti i file trovati con opzione Leggi e Scarica
                     if file_trovati:
                         st.write(f"📄 **Approfondimenti disponibili ({len(file_trovati)}):**")
                         
                         for f_name, percorso_completo in sorted(file_trovati):
                             col1, col2, col3 = st.columns([2, 1, 1])
-                            
-                            mostra_testo = False
+                            mo_testo = False
                             
                             with col1:
                                 st.write(f"🔹 {f_name}")
                                 
                             with col2:
                                 if st.button("Leggi", key=f"read_{nome}_{f_name}"):
-                                    mostra_testo = True
+                                    mo_testo = True
                                     
                             with col3:
                                 with open(percorso_completo, "rb") as f:
@@ -125,12 +170,22 @@ if funzione_scelta == "Cerca nell'Archivio":
                                         key=f"dl_{nome}_{f_name}"
                                     )
                             
-                            # Visualizzazione del testo fuori dalle colonne (Piena Larghezza)
-                            if mostra_testo:
-                                testo_estratto = leggi_testo_odt(percorso_completo)
+                            if mo_testo:
+                                titolo, testo_pulito, note = leggi_testo_odt(percorso_completo)
                                 st.write("")
                                 st.info(f"--- Inizio Contenuto: {f_name} ---")
-                                st.write(testo_estratto)
+                                
+                                # Visualizzazione Grafica Separata
+                                st.title(titolo)
+                                st.divider()
+                                st.write(testo_pulito)
+                                
+                                if note:
+                                    st.divider()
+                                    st.subheader("📝 Note a piè di pagina")
+                                    for n in note:
+                                        st.caption(n)
+                                        
                                 st.info("--- Fine Contenuto ---")
                                 st.write("")
                     else:
@@ -187,12 +242,22 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
                             key=f"sfoglia_dl_{file_odt}"
                         )
                 
-                # Visualizzazione a tutta larghezza anche nella sezione Sfoglia
                 if mostra_testo_sfoglia:
-                    testo_estratto = leggi_testo_odt(percorso_file)
+                    titolo, testo_pulito, note = leggi_testo_odt(percorso_file)
                     st.write("")
                     st.info(f"--- Inizio Contenuto: {file_odt} ---")
-                    st.write(testo_estratto)
+                    
+                    # Visualizzazione Grafica Separata (Titolo -> Linea -> Testo -> Linea -> Note)
+                    st.title(titolo)
+                    st.divider()
+                    st.write(testo_pulito)
+                    
+                    if note:
+                        st.divider()
+                        st.subheader("📝 Note a piè di pagina")
+                        for n in note:
+                            st.caption(n)
+                            
                     st.info("--- Fine Contenuto ---")
                     st.write("")
         else:
