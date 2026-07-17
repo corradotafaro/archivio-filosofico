@@ -34,51 +34,49 @@ def leggi_testo_odt(percorso_file):
             
             # Analizziamo ogni singolo frammento all'interno del paragrafo
             for nodo in paragrafo.childNodes:
-                # Se è testo normale
                 if nodo.nodeType == nodo.TEXT_NODE:
                     testo_paragrafo += str(nodo.data)
                     
-                # Se è una nota a piè di pagina (tag text:note)
                 elif nodo.nodeType == nodo.ELEMENT_NODE and nodo.tagName == "text:note":
-                    # Inseriamo un rimando pulito nel testo corrente: es. [1]
                     testo_paragrafo += f" **[{contatore_note}]**"
                     
-                    # Estraiamo il testo nascosto all'interno di quella specifica nota
                     testo_della_nota = ""
                     for contenuto_nota in nodo.getElementsByType(text.P):
                         for frammento in contenuto_nota.childNodes:
                             if frammento.nodeType == frammento.TEXT_NODE:
                                 testo_della_nota += str(frammento.data)
                     
-                    # Salviamo la nota nella lista per il fondo pagina
                     note_pie_pagina.append(f"**[{contatore_note}]** {testo_della_nota.strip()}")
                     contatore_note += 1
 
-            # Pulizia degli spazi
             testo_paragrafo = testo_paragrafo.strip()
             if not testo_paragrafo:
                 continue
 
-            # Rilevamento automatico del Titolo (Se ha stile "Heading" o se è la primissima riga del saggio)
-            if (stile_paragrafo and "Heading" in stile_paragrafo) or (not titolo_rilevato and testo_paragrafo):
+            # MODIFICA: Intercettiamo il titolo SOLO se ha lo stile "Heading" ufficiale di LibreOffice
+            if stile_paragrafo and "Heading" in stile_paragrafo:
                 if not titolo_rilevato:
                     titolo_rilevato = testo_paragrafo
-                    continue # Evitiamo di inserire il titolo anche dentro il corpo del testo
+                    continue 
 
             testo_principale.append(testo_paragrafo)
 
-        # Se il file non ha intestazioni interne, usa il nome del file pulito come titolo
+        # Se non c'è uno stile Heading, prendiamo il nome del file, togliamo i prefissi e lo puliamo
         if not titolo_rilevato:
             nome_file = os.path.basename(percorso_file)
-            titolo_rilevato = nome_file.replace(".odt", "").replace("_", " ")
+            # Rimuove l'estensione e pulisce i trattini bassi
+            nome_pulito = nome_file.replace(".odt", "").replace("_", " ")
+            # Se inizia con prefissi come "Zz ", li pulisce per un titolo più elegante
+            if nome_pulito.lower().startswith("zz "):
+                nome_pulito = nome_pulito[3:]
+            titolo_rilevato = nome_pulito.capitalize()
 
         corpo_testo_pulito = "\n\n".join(testo_principale)
         
         return titolo_rilevato, corpo_testo_pulito, note_pie_pagina
 
     except Exception as e:
-        return "Errore", f"Errore nella lettura del file LibreOffice: {e}", []
-    
+        return "Errore", f"Errore nella lettura del file LibreOffice: {e}", []    
 # --- CARTELLA APPROFONDIMENTI ---
 CARTELLA_APPROFONDIMENTI = "approfondimenti"
 
