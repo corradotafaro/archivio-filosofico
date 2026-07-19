@@ -2,8 +2,7 @@ import streamlit as st
 import json
 import random
 import os
-from odf import text
-from odf.opendocument import load
+import base64
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
@@ -17,66 +16,25 @@ def carica_database():
 
 db = carica_database()
 
-# --- NUOVA FUNZIONE EVOLUTA PER LEGGERE I FILE .ODT (CON TITOLI E NOTE SEPARATI) ---
-def leggi_testo_odt(percorso_file):
+# --- NUOVA FUNZIONE PER INCORPORARE IL LETTORE PDF ---
+def mostra_visualizzatore_pdf(percorso_pdf):
     try:
-        doc = load(percorso_file)
+        with open(percorso_pdf, "rb") as f:
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
         
-        titolo_rilevato = ""
-        testo_principale = []
-        note_pie_pagina = []
-        contatore_note = 1
-
-        # Scorriamo tutti i paragrafi del documento ODT
-        for paragrafo in doc.getElementsByType(text.P):
-            stile_paragrafo = paragrafo.getAttribute("stylename")
-            testo_paragrafo = ""
-            
-            # Analizziamo ogni singolo frammento all'interno del paragrafo
-            for nodo in paragrafo.childNodes:
-                if nodo.nodeType == nodo.TEXT_NODE:
-                    testo_paragrafo += str(nodo.data)
-                    
-                elif nodo.nodeType == nodo.ELEMENT_NODE and nodo.tagName == "text:note":
-                    testo_paragrafo += f" **[{contatore_note}]**"
-                    
-                    testo_della_nota = ""
-                    for contenuto_nota in nodo.getElementsByType(text.P):
-                        for frammento in contenuto_nota.childNodes:
-                            if frammento.nodeType == frammento.TEXT_NODE:
-                                testo_della_nota += str(frammento.data)
-                    
-                    note_pie_pagina.append(f"**[{contatore_note}]** {testo_della_nota.strip()}")
-                    contatore_note += 1
-
-            testo_paragrafo = testo_paragrafo.strip()
-            if not testo_paragrafo:
-                continue
-
-            # MODIFICA: Intercettiamo il titolo SOLO se ha lo stile "Heading" ufficiale di LibreOffice
-            if stile_paragrafo and "Heading" in stile_paragrafo:
-                if not titolo_rilevato:
-                    titolo_rilevato = testo_paragrafo
-                    continue 
-
-            testo_principale.append(testo_paragrafo)
-
-        # Se non c'è uno stile Heading, prendiamo il nome del file, togliamo i prefissi e lo puliamo
-        if not titolo_rilevato:
-            nome_file = os.path.basename(percorso_file)
-            # Rimuove l'estensione e pulisce i trattini bassi
-            nome_pulito = nome_file.replace(".odt", "").replace("_", " ")
-            # Se inizia con prefissi come "Zz ", li pulisce per un titolo più elegante
-            if nome_pulito.lower().startswith("zz "):
-                nome_pulito = nome_pulito[3:]
-            titolo_rilevato = nome_pulito.capitalize()
-
-        corpo_testo_pulito = "\n\n".join(testo_principale)
-        
-        return titolo_rilevato, corpo_testo_pulito, note_pie_pagina
-
+        # Riquadro HTML che incorpora il PDF nativamente nel browser
+        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
+        st.markdown(pdf_display, unsafe_allow_html=True)
     except Exception as e:
-        return "Errore", f"Errore nella lettura del file LibreOffice: {e}", []    
+        st.error(f"Impossibile visualizzare il file PDF: {e}")
+
+# --- FUNZIONE DI APPOGGIO PER IL TITOLO ESTERNO ---
+def ottieni_titolo_pulito(nome_file):
+    nome_pulito = nome_file.replace(".pdf", "").replace(".odt", "").replace("_", " ")
+    if nome_pulito.lower().startswith("zz "):
+        nome_pulito = nome_pulito[3:]
+    return nome_pulito.capitalize()
+
 # --- CARTELLA APPROFONDIMENTI ---
 CARTELLA_APPROFONDIMENTI = "approfondimenti"
 
@@ -89,14 +47,12 @@ funzione_scelta = st.sidebar.radio("Seleziona un'azione:", ["Cerca nell'Archivio
 st.sidebar.divider()
 st.sidebar.markdown("### 🏛️ Il Progetto")
 
-# Dedica in memoria
 st.sidebar.markdown("""
 > *In memoria di Giusi Miccichè, compagna di vita e di studi.*
 >
-> *Il nostro destino ineluttabile ci costringe ad essere in questa terra solo spettatori in transito, arriviamo como ospiti inattesi e ce ne andiamo come ombre, attraversiamo la vita come una scena che non si ripete, consapevoli che ogni incontro, ogni gesto, ogni istante è già sul punto di svanire.*
+> *Il nostro destino ineluttabile ci costringe ad essere in questa terra solo spettatori in transito, arriviamo come ospiti inattesi e ce ne andiamo come ombre, attraversiamo la vita come una scena che non si ripete, consapevoli che ogni incontro, ogni gesto, ogni istante è già sul punto di svanire.*
 """)
 
-# Presentazione del percorso e della filosofia
 st.sidebar.markdown("""
 La filosofia, quella dei classici Greci, intesa come amore per il sapere, ha avuto da sempre fascino e curiosità per il grande valore umanistico che ha saputo tramandare da più di 2600 anni e che a tutt’oggi è sempre attuale e prodiga di consigli preziosi che possono essere applicati in molti aspetti della vita di oggi.
 
@@ -108,7 +64,7 @@ I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per 
 # --- SEZIONE 1: CERCA NELL'ARCHIVIO ---
 if funzione_scelta == "Cerca nell'Archivio":
     st.title("🔍 Cerca nell'Archivio")
-    st.write("Inserisci un nome o un concetto per consultare il database e i relativi documenti LibreOffice.")
+    st.write("Inserisci un nome o un concetto per consultare il database e i relativi documenti PDF.")
     
     query = st.text_input("Inserisci il nome di un filosofo, un personaggio o un concetto:")
 
@@ -133,61 +89,52 @@ if funzione_scelta == "Cerca nell'Archivio":
                     
                     st.divider()
                     
-                    # --- RICERCA DI TUTTI I FILE .ODT CORRISPONDENTI ---
+                    # Cerca sia i nuovi file .pdf che i vecchi .odt rimasti
                     file_trovati = []
-                    
                     if os.path.exists(CARTELLA_APPROFONDIMENTI):
                         tutti_i_file = os.listdir(CARTELLA_APPROFONDIMENTI)
-                        
                         for f_name in tutti_i_file:
-                            if f_name.endswith('.odt') and nome.lower() in f_name.lower():
+                            if (f_name.endswith('.pdf') or f_name.endswith('.odt')) and nome.lower() in f_name.lower():
                                 percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
                                 file_trovati.append((f_name, percorso_completo))
                     
                     if file_trovati:
                         st.write(f"📄 **Approfondimenti disponibili ({len(file_trovati)}):**")
-                        
                         for f_name, percorso_completo in sorted(file_trovati):
                             col1, col2, col3 = st.columns([2, 1, 1])
                             mo_testo = False
                             
                             with col1:
                                 st.write(f"🔹 {f_name}")
-                                
                             with col2:
                                 if st.button("Leggi", key=f"read_{nome}_{f_name}"):
                                     mo_testo = True
-                                    
                             with col3:
+                                mime_type = "application/pdf" if f_name.endswith('.pdf') else "application/vnd.oasis.opendocument.text"
                                 with open(percorso_completo, "rb") as f:
                                     st.download_button(
                                         label="Scarica",
                                         data=f,
                                         file_name=f_name,
-                                        mime="application/vnd.oasis.opendocument.text",
+                                        mime=mime_type,
                                         key=f"dl_{nome}_{f_name}"
                                     )
                             
                             if mo_testo:
-                                titolo, testo_pulito, note = leggi_testo_odt(percorso_completo)
                                 st.write("")
-                                st.info(f"--- Inizio Contenuto: {f_name} ---")
-                                
-                                # Visualizzazione Grafica Separata
-                                st.title(titolo)
+                                st.info(f"--- Visualizzazione: {f_name} ---")
+                                st.title(ottieni_titolo_pulito(f_name))
                                 st.divider()
-                                st.write(testo_pulito)
                                 
-                                if note:
-                                    st.divider()
-                                    st.subheader("📝 Note a piè di pagina")
-                                    for n in note:
-                                        st.caption(n)
-                                        
+                                if f_name.endswith('.pdf'):
+                                    mostra_visualizzatore_pdf(percorso_completo)
+                                else:
+                                    st.warning("Questo file è ancora in formato .odt. Per visualizzarlo perfettamente senza errori, esportalo in .pdf su LibreOffice e caricalo su GitHub.")
+                                
                                 st.info("--- Fine Contenuto ---")
                                 st.write("")
                     else:
-                        st.caption("Nessun file di approfondimento .odt trovato automaticamente per questo autore.")
+                        st.caption("Nessun file di approfondimento trovato automaticamente per questo autore.")
         else:
             st.warning("Nessun elemento trovato corrispondente alla ricerca.")
             
@@ -212,53 +159,50 @@ elif funzione_scelta == "Invoca l'Oracolo":
 
 # --- SEZIONE 3: SFOGLIA APPROFONDIMENTI ---
 elif funzione_scelta == "Sfoglia Approfondimenti":
-    st.title("📁 Tutti gli Approfondimenti LibreOffice")
-    st.write("Ecco la lista completa dei file presenti nella tua cartella.")
+    st.title("📁 Tutti gli Approfondimenti dell'Archivio")
+    st.write("Ecco la lista completa dei file presenti nella tua cartella (sono supportati sia PDF che ODT).")
     
     if os.path.exists(CARTELLA_APPROFONDIMENTI):
-        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI) if f.endswith('.odt')]
+        # Legge sia i file PDF che i vecchi ODT
+        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI) if f.endswith('.pdf') or f.endswith('.odt')]
         
         if file_presenti:
-            for file_odt in sorted(file_presenti):
-                percorso_file = os.path.join(CARTELLA_APPROFONDIMENTI, file_odt)
+            for file_saggio in sorted(file_presenti):
+                percorso_file = os.path.join(CARTELLA_APPROFONDIMENTI, file_saggio)
                 col1, col2, col3 = st.columns([2, 1, 1])
                 
                 mostra_testo_sfoglia = False
                 
                 with col1:
-                    st.write(f"🔹 {file_odt}")
+                    st.write(f"🔹 {file_saggio}")
                 with col2:
-                    if st.button("Leggi", key=f"sfoglia_read_{file_odt}"):
+                    if st.button("Leggi", key=f"sfoglia_read_{file_saggio}"):
                         mostra_testo_sfoglia = True
                 with col3:
+                    mime_type = "application/pdf" if file_saggio.endswith('.pdf') else "application/vnd.oasis.opendocument.text"
                     with open(percorso_file, "rb") as f:
                         st.download_button(
                             label="Scarica",
                             data=f,
-                            file_name=file_odt,
-                            mime="application/vnd.oasis.opendocument.text",
-                            key=f"sfoglia_dl_{file_odt}"
+                            file_name=file_saggio,
+                            mime=mime_type,
+                            key=f"sfoglia_dl_{file_saggio}"
                         )
                 
                 if mostra_testo_sfoglia:
-                    titolo, testo_pulito, note = leggi_testo_odt(percorso_file)
                     st.write("")
-                    st.info(f"--- Inizio Contenuto: {file_odt} ---")
-                    
-                    # Visualizzazione Grafica Separata (Titolo -> Linea -> Testo -> Linea -> Note)
-                    st.title(titolo)
+                    st.info(f"--- Visualizzazione: {file_saggio} ---")
+                    st.title(ottieni_titolo_pulito(file_saggio))
                     st.divider()
-                    st.write(testo_pulito)
                     
-                    if note:
-                        st.divider()
-                        st.subheader("📝 Note a piè di pagina")
-                        for n in note:
-                            st.caption(n)
-                            
+                    if file_saggio.endswith('.pdf'):
+                        mostra_visualizzatore_pdf(percorso_file)
+                    else:
+                        st.warning("Questo file è in formato .odt. Per visualizzarlo perfettamente senza omissioni, esportalo in formato .pdf da LibreOffice Writer e caricalo su GitHub.")
+                        
                     st.info("--- Fine Contenuto ---")
                     st.write("")
         else:
-            st.info("Non ci sono file .odt nella cartella 'approfondimenti'.")
+            st.info("Non ci sono file validi nella cartella 'approfondimenti'.")
     else:
         st.error("La cartella 'approfondimenti' non è stata trovata.")
