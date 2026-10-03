@@ -60,7 +60,13 @@ I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per 
 
 **Corrado Tafaro**
 """)
-
+# --- NOTA METODOLOGICA AI ---
+st.sidebar.divider()
+st.sidebar.info(
+    "**Nota metodologica:** I testi, le analisi e la struttura concettuale dell'archivio "
+    "sono frutto del lavoro originale dell'autore. Gli strumenti di Intelligenza Artificiale "
+    "vengono impiegati esclusivamente come supporto nella fase di revisione formale e correzione sintattica."
+)
 # --- SEZIONE 1: CERCA NELL'ARCHIVIO ---
 if funzione_scelta == "Cerca nell'Archivio":
     st.title("🔍 Cerca nell'Archivio")
