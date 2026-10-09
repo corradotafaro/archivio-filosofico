@@ -15,16 +15,21 @@ def carica_database():
     return {}
 
 db = carica_database()
-
-# --- NUOVA FUNZIONE PER INCORPORARE IL LETTORE PDF ---
+# --- NUOVA FUNZIONE PER VISUALIZZARE IL PDF CONTESTUALMENTE (COMPATIBILE CHROME) ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
-        with open(percorso_pdf, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+        nome_file = os.path.basename(percorso_pdf)
         
-        # Riquadro HTML che incorpora il PDF nativamente nel browser
-        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="800" type="application/pdf"></iframe>'
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        # URL raw diretto del tuo repository GitHub pubblico
+        url_raw_github = f"https://raw.githubusercontent.com/corradotafaro/archivio-filosofico/main/approfondimenti/{nome_file}"
+        
+        # Visualizzatore integrato contestuale riconosciuto e autorizzato da Chrome
+        iframe_src = f"https://docs.google.com/viewer?url={url_raw_github}&embedded=true"
+        
+        st.components.v1.html(
+            f'<iframe src="{iframe_src}" width="100%" height="800" frameborder="0"></iframe>',
+            height=820
+        )
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
 
@@ -60,13 +65,15 @@ I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per 
 
 **Corrado Tafaro**
 """)
+
 # --- NOTA METODOLOGICA AI ---
 st.sidebar.divider()
 st.sidebar.info(
-    "**Nota metodologica:** I testi, le analisi e la struttura concettuale dell'archivio "
+    "**Nota metodologica:** I testi, las analisi e la struttura concettuale dell'archivio "
     "sono frutto del lavoro originale dell'autore. Gli strumenti di Intelligenza Artificiale "
     "vengono impiegati esclusivamente come supporto nella fase di revisione formale e correzione sintattica."
 )
+
 # --- SEZIONE 1: CERCA NELL'ARCHIVIO ---
 if funzione_scelta == "Cerca nell'Archivio":
     st.title("🔍 Cerca nell'Archivio")
