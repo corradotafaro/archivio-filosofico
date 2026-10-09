@@ -3,6 +3,7 @@ import json
 import random
 import os
 import base64
+from streamlit_pdf_viewer import pdf_viewer
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
@@ -18,18 +19,9 @@ db = carica_database()
 # --- NUOVA FUNZIONE PER VISUALIZZARE IL PDF CONTESTUALMENTE (COMPATIBILE CHROME) ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
-        nome_file = os.path.basename(percorso_pdf)
-        
-        # URL raw diretto del tuo repository GitHub pubblico
-        url_raw_github = f"https://raw.githubusercontent.com/corradotafaro/archivio-filosofico/main/approfondimenti/{nome_file}"
-        
-        # Visualizzatore integrato contestuale riconosciuto e autorizzato da Chrome
-        iframe_src = f"https://docs.google.com/viewer?url={url_raw_github}&embedded=true"
-        
-        st.components.v1.html(
-            f'<iframe src="{iframe_src}" width="100%" height="800" frameborder="0"></iframe>',
-            height=820
-        )
+        with open(percorso_pdf, "rb") as f:
+            pdf_data = f.read()
+        pdf_viewer(input=pdf_data, width=700, height=800)
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
 
