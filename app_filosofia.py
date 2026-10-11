@@ -16,16 +16,29 @@ def carica_database():
     return {}
 
 db = carica_database()
-# --- FUNZIONE CORRETTA E COMPATIBILE CON STREAMLIT-PDF-VIEWER ---
+# --- FUNZIONE OPTIMIZZATA PER LA RESA VISIVA E I COMANDI ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
         with open(percorso_pdf, "rb") as f:
             pdf_data = f.read()
         
-        # Parametri standard riconosciuti dalla libreria
+        # Inseriamo un contenitore CSS per evitare che la barra dello zoom venga tagliata
+        st.markdown(
+            """
+            <style>
+            div[data-testid="stCustomComponentV1"] {
+                display: flex;
+                justify-content: center;
+                padding-top: 10px;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Rimuovendo 'width', il componente si adatta perfettamente alla pagina
         pdf_viewer(
             input=pdf_data, 
-            width=750, 
             height=850,
             render_text=True
         )
