@@ -16,12 +16,20 @@ def carica_database():
     return {}
 
 db = carica_database()
-# --- NUOVA FUNZIONE PER VISUALIZZARE IL PDF CONTESTUALMENTE (COMPATIBILE CHROME) ---
+# --- NUOVA FUNZIONE CON COMANDI NATIVI E BARRA DELLO ZOOM/NAVIGAZIONE ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
         with open(percorso_pdf, "rb") as f:
             pdf_data = f.read()
-        pdf_viewer(input=pdf_data, width=700, height=800)
+        
+        # Attiva i comandi nativi del visualizzatore (pagine, zoom, selezione testo)
+        pdf_viewer(
+            input=pdf_data, 
+            width=750, 
+            height=850,
+            render_text=True,     # Permette di selezionare e copiare il testo
+            show_page_number=True # Mostra il numero di pagina e la barra dei comandi
+        )
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
 
@@ -61,7 +69,7 @@ I grandi pensatori come Socrate, Platone e Aristotele hanno gettato le basi per 
 # --- NOTA METODOLOGICA AI ---
 st.sidebar.divider()
 st.sidebar.info(
-    "**Nota metodologica:** I testi, las analisi e la struttura concettuale dell'archivio "
+    "**Nota metodologica:** I testi, le analisi e la struttura concettuale dell'archivio "
     "sono frutto del lavoro originale dell'autore. Gli strumenti di Intelligenza Artificiale "
     "vengono impiegati esclusivamente come supporto nella fase di revisione formale e correzione sintattica."
 )
