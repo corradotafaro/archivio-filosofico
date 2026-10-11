@@ -16,19 +16,18 @@ def carica_database():
     return {}
 
 db = carica_database()
-# --- NUOVA FUNZIONE CON COMANDI NATIVI E BARRA DELLO ZOOM/NAVIGAZIONE ---
+# --- FUNZIONE CORRETTA E COMPATIBILE CON STREAMLIT-PDF-VIEWER ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
         with open(percorso_pdf, "rb") as f:
             pdf_data = f.read()
         
-        # Attiva i comandi nativi del visualizzatore (pagine, zoom, selezione testo)
+        # Parametri standard riconosciuti dalla libreria
         pdf_viewer(
             input=pdf_data, 
             width=750, 
             height=850,
-            render_text=True,     # Permette di selezionare e copiare il testo
-            show_page_number=True # Mostra il numero di pagina e la barra dei comandi
+            render_text=True
         )
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
