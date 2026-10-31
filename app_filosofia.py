@@ -4,63 +4,50 @@ import random
 import os
 import base64
 import socket
+import urllib.request
 from streamlit_pdf_viewer import pdf_viewer
 
 NOME_FILE_CONTATORE = "contatore_visite.json"
 
-# 1. Definisci PRIMA e_in_locale()
+# 1. Verifica ambiente locale
 def e_in_locale():
-    # Se è presente la variabile d'ambiente di Streamlit Cloud, siamo ONLINE
     if "STREAMLIT_SERVER_PORT" in os.environ or "STREAMLIT_SHARING_HOST" in os.environ:
         return False
-    # Altrimenti stiamo eseguendo il codice sul computer locale
     return True
 
-# 2. Definisci DOPO gestisci_visite()
+# 2. Gestione visite tramite API remota
 def gestisci_visite():
     # In locale legge soltanto senza incrementare
     if e_in_locale():
-        if os.path.exists(NOME_FILE_CONTATORE):
-            try:
-                with open(NOME_FILE_CONTATORE, "r") as f:
-                    return json.load(f).get("visite", 0)
-            except Exception:
-                return 0
-        return 0
-
-    # In ambiente Online (Streamlit Cloud)
-    if not os.path.exists(NOME_FILE_CONTATORE):
         try:
-            with open(NOME_FILE_CONTATORE, "w") as f:
-                json.dump({"visite": 4}, f)
+            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                dati = json.loads(response.read().decode())
+                return dati.get("count", 0)
         except Exception:
-            pass
+            return 4
 
-    # Incrementa solo una volta per ciascuna sessione utente
+    # Online su Streamlit Cloud: incrementa solo 1 volta per sessione
     if "visita_conteggiata" not in st.session_state:
         st.session_state["visita_conteggiata"] = True
-        conteggio_attuale = 4
-        if os.path.exists(NOME_FILE_CONTATORE):
-            try:
-                with open(NOME_FILE_CONTATORE, "r") as f:
-                    conteggio_attuale = json.load(f).get("visite", 4)
-            except Exception:
-                pass
-        
-        conteggio_attuale += 1
-        
         try:
-            with open(NOME_FILE_CONTATORE, "w") as f:
-                json.dump({"visite": conteggio_attuale}, f)
+            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/up"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                dati = json.loads(response.read().decode())
+                return dati.get("count", 4)
         except Exception:
-            pass
-
-    # Legge e restituisce il totale
-    try:
-        with open(NOME_FILE_CONTATORE, "r") as f:
-            return json.load(f).get("visite", 4)
-    except Exception:
-        return 4
+            return 4
+    else:
+        try:
+            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/"
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req) as response:
+                dati = json.loads(response.read().decode())
+                return dati.get("count", 4)
+        except Exception:
+            return 4
 
     # 3. Incrementa SOLO se questa specifica sessione non è ancora stata conteggiata
     if "visita_conteggiata" not in st.session_state:
