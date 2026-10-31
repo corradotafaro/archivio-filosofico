@@ -301,18 +301,14 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
 # Qui c'è la logica del tuo archivio, le schede, la lettura dei PDF, ecc.
 # ...
 # ------------------------------------------------------------------
-# --- PIÈ DI PAGINA (Da inserire proprio all'ultima riga del file) ---
+# --- PIÈ DI PAGINA CON BADGE CONTATORE DINAMICO ---
 # ------------------------------------------------------------------
-
-# 1. Recupera o aggiorna il conteggio delle visite
-totale_visite = gestisci_visite()
-
-# 2. Mostra il footer centrato a piè di pagina
 st.markdown("---")
 st.markdown(
-    f"""
+    """
     <div style="text-align: center; color: #666666; font-size: 0.9em; padding: 10px;">
-        Archivio Filosofico — Visite totali: <b>{totale_visite}</b>
+        <p style="margin-bottom: 8px;">Archivio Filosofico</p>
+        <img src="https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https%3A%2F%2Farchivio-filosofico.streamlit.app&count_bg=%23795548&title_bg=%23555555&icon=&icon_color=%23E7E7E7&title=Visite&edge_flat=false"/>
     </div>
     """,
     unsafe_allow_html=True
