@@ -267,10 +267,14 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
 # --- CODICE ESISTENTE DELLA TUA APP ---
 # Qui c'è la logica del tuo archivio, le schede, la lettura dei PDF, ecc.
 # ...
-
 # ------------------------------------------------------------------
 # --- PIÈ DI PAGINA (Da inserire proprio all'ultima riga del file) ---
 # ------------------------------------------------------------------
+
+# 1. Recupera o aggiorna il conteggio delle visite
+totale_visite = gestisci_visite()
+
+# 2. Mostra il footer centrato a piè di pagina
 st.markdown("---")
 st.markdown(
     f"""
