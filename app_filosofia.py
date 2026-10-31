@@ -4,19 +4,8 @@ import random
 import os
 import base64
 from streamlit_pdf_viewer import pdf_viewer
-# --- 1. CONFIGURAZIONE E FUNZIONI DI SUPPORTO ---
-NOME_FILE_CONTATORE = "contatore_visite.json"
-
-def e_in_locale():
-    try:
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
-        is_cloud = "STREAMLIT_SERVER_PORT" in os.environ or "STREAMLIT_SHARING_HOST" in os.environ
-        return not is_cloud or local_ip.startswith("127.") or hostname == "localhost"
-    except Exception:
-        return False
-
 def gestisci_visite():
+    # 1. Se siamo in ambiente locale (sviluppo), legge solo il conteggio senza incrementare
     if e_in_locale():
         try:
             with open(NOME_FILE_CONTATORE, "r") as f:
@@ -24,12 +13,14 @@ def gestisci_visite():
         except Exception:
             return 0
 
+    # 2. Crea il file JSON se non esiste ancora
     if not os.path.exists(NOME_FILE_CONTATORE):
         with open(NOME_FILE_CONTATORE, "w") as f:
             json.dump({"visite": 0}, f)
 
-    if "visita_registrata" not in st.session_state:
-        st.session_state["visita_registrata"] = True
+    # 3. Incrementa SOLO se questa specifica sessione non è ancora stata conteggiata
+    if "visita_conteggiata" not in st.session_state:
+        st.session_state["visita_conteggiata"] = True
         try:
             with open(NOME_FILE_CONTATORE, "r+") as f:
                 dati = json.load(f)
@@ -40,19 +31,12 @@ def gestisci_visite():
         except Exception:
             pass
 
+    # 4. Ritorna il valore attuale leggendolo dal file
     try:
         with open(NOME_FILE_CONTATORE, "r") as f:
             return json.load(f).get("visite", 0)
     except Exception:
         return 0
-
-# --- 2. INIZIALIZZAZIONE ---
-totale_visite = gestisci_visite()
-
-# --- 3. LAYOUT DELL'APPLICAZIONE ---
-# (Qui segue il resto del tuo codice, ad esempio la sidebar)
-st.sidebar.markdown("---")
-st.sidebar.metric(label="Visite totali", value=totale_visite)
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
