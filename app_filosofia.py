@@ -301,32 +301,30 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
 # Qui c'è la logica del tuo archivio, le schede, la lettura dei PDF, ecc.
 # ...
 # ------------------------------------------------------------------
-# --- PIÈ DI PAGINA CON CONTATORE TESTUALE ---
+# --- PIÈ DI PAGINA CON CONTATORE DI MEMORIA NATIVO ---
 # ------------------------------------------------------------------
-import urllib.request
-import json
 
-def ottieni_visite_totali():
-    try:
-        # Usa l'API di countapi per registrare e leggere le visite reali
-        url = "https://api.countapi.xyz/hit/archivio-filosofico-corrado-2026/visits"
-        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-        with urllib.request.urlopen(req, timeout=3) as response:
-            dati = json.loads(response.read().decode())
-            return dati.get("value", "—")
-    except Exception:
-        # Valore di riserva se la rete impiega troppo tempo
-        return "Disponibile a breve"
+# 1. Utilizza la memoria condivisa del server Streamlit
+@st.cache_resource
+def inizializza_registro():
+    # Valore di partenza dell'archivio
+    return {"visite": 5}
 
-# Recupera il numero totale
-visite_attuali = ottieni_visite_totali()
+registro = inizializza_registro()
 
-# Mostra il piè di pagina in formato testo pulito
+# 2. Incrementa una sola volta per la sessione dell'utente corrente
+if "visita_registrata" not in st.session_state:
+    st.session_state["visita_registrata"] = True
+    registro["visite"] += 1
+
+totale_visite = registro["visite"]
+
+# 3. Mostra il piè di pagina in formato testo pulito
 st.markdown("---")
 st.markdown(
     f"""
     <div style="text-align: center; color: #666666; font-size: 0.9em; padding: 10px;">
-        Archivio Filosofico — Visite totali: <b>{visite_attuali}</b>
+        Archivio Filosofico — Visite totali: <b>{totale_visite}</b>
     </div>
     """,
     unsafe_allow_html=True
