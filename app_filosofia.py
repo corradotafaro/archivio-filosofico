@@ -4,6 +4,55 @@ import random
 import os
 import base64
 from streamlit_pdf_viewer import pdf_viewer
+# --- 1. CONFIGURAZIONE E FUNZIONI DI SUPPORTO ---
+NOME_FILE_CONTATORE = "contatore_visite.json"
+
+def e_in_locale():
+    try:
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        is_cloud = "STREAMLIT_SERVER_PORT" in os.environ or "STREAMLIT_SHARING_HOST" in os.environ
+        return not is_cloud or local_ip.startswith("127.") or hostname == "localhost"
+    except Exception:
+        return False
+
+def gestisci_visite():
+    if e_in_locale():
+        try:
+            with open(NOME_FILE_CONTATORE, "r") as f:
+                return json.load(f).get("visite", 0)
+        except Exception:
+            return 0
+
+    if not os.path.exists(NOME_FILE_CONTATORE):
+        with open(NOME_FILE_CONTATORE, "w") as f:
+            json.dump({"visite": 0}, f)
+
+    if "visita_registrata" not in st.session_state:
+        st.session_state["visita_registrata"] = True
+        try:
+            with open(NOME_FILE_CONTATORE, "r+") as f:
+                dati = json.load(f)
+                dati["visite"] += 1
+                f.seek(0)
+                json.dump(dati, f)
+                f.truncate()
+        except Exception:
+            pass
+
+    try:
+        with open(NOME_FILE_CONTATORE, "r") as f:
+            return json.load(f).get("visite", 0)
+    except Exception:
+        return 0
+
+# --- 2. INIZIALIZZAZIONE ---
+totale_visite = gestisci_visite()
+
+# --- 3. LAYOUT DELL'APPLICAZIONE ---
+# (Qui segue il resto del tuo codice, ad esempio la sidebar)
+st.sidebar.markdown("---")
+st.sidebar.metric(label="Visite totali", value=totale_visite)
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
@@ -231,3 +280,19 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
             st.info("Non ci sono file validi nella cartella 'approfondimenti'.")
     else:
         st.error("La cartella 'approfondimenti' non è stata trovata.")
+# --- CODICE ESISTENTE DELLA TUA APP ---
+# Qui c'è la logica del tuo archivio, le schede, la lettura dei PDF, ecc.
+# ...
+
+# ------------------------------------------------------------------
+# --- PIÈ DI PAGINA (Da inserire proprio all'ultima riga del file) ---
+# ------------------------------------------------------------------
+st.markdown("---")
+st.markdown(
+    f"""
+    <div style="text-align: center; color: #666666; font-size: 0.9em; padding: 10px;">
+        Archivio Filosofico — Visite totali: <b>{totale_visite}</b>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
