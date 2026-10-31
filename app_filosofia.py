@@ -3,73 +3,9 @@ import json
 import random
 import os
 import base64
-import socket
-import urllib.request
 from streamlit_pdf_viewer import pdf_viewer
 
 NOME_FILE_CONTATORE = "contatore_visite.json"
-
-# 1. Verifica ambiente locale
-def e_in_locale():
-    if "STREAMLIT_SERVER_PORT" in os.environ or "STREAMLIT_SHARING_HOST" in os.environ:
-        return False
-    return True
-
-# 2. Gestione visite tramite API remota
-def gestisci_visite():
-    # URL del contatore dedicato al tuo archivio
-    url_up = "https://api.countapi.xyz/hit/archivio-filosofico-corrado-2026/visite"
-    url_get = "https://api.countapi.xyz/get/archivio-filosofico-corrado-2026/visite"
-
-    # In locale legge soltanto senza incrementare
-    if e_in_locale():
-        try:
-            req = urllib.request.Request(url_get, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
-                dati = json.loads(response.read().decode())
-                return dati.get("value", 5)
-        except Exception:
-            return 5
-
-    # Online su Streamlit Cloud: incrementa solo 1 volta per sessione
-    if "visita_conteggiata" not in st.session_state:
-        st.session_state["visita_conteggiata"] = True
-        try:
-            req = urllib.request.Request(url_up, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
-                dati = json.loads(response.read().decode())
-                return dati.get("value", 5)
-        except Exception:
-            return 5
-    else:
-        # Sessione già conteggiata: legge soltanto
-        try:
-            req = urllib.request.Request(url_get, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=3) as response:
-                dati = json.loads(response.read().decode())
-                return dati.get("value", 5)
-        except Exception:
-            return 5
-
-    # 3. Incrementa SOLO se questa specifica sessione non è ancora stata conteggiata
-    if "visita_conteggiata" not in st.session_state:
-        st.session_state["visita_conteggiata"] = True
-        try:
-            with open(NOME_FILE_CONTATORE, "r+") as f:
-                dati = json.load(f)
-                dati["visite"] += 1
-                f.seek(0)
-                json.dump(dati, f)
-                f.truncate()
-        except Exception:
-            pass
-
-    # 4. Ritorna il valore attuale leggendolo dal file
-    try:
-        with open(NOME_FILE_CONTATORE, "r") as f:
-            return json.load(f).get("visite", 0)
-    except Exception:
-        return 0
 
 # --- CONFIGURAZIONE DELLA PAGINA ---
 st.set_page_config(page_title="Archivio Filosofico", page_icon="🏛️", layout="centered")
