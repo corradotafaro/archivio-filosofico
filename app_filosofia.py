@@ -3,9 +3,23 @@ import json
 import random
 import os
 import base64
+import socket
 from streamlit_pdf_viewer import pdf_viewer
+
+NOME_FILE_CONTATORE = "contatore_visite.json"
+
+# 1. Definisci PRIMA e_in_locale()
+def e_in_locale():
+    try:
+        hostname = socket.gethostname()
+        local_ip = socket.gethostbyname(hostname)
+        is_cloud = "STREAMLIT_SERVER_PORT" in os.environ or "STREAMLIT_SHARING_HOST" in os.environ
+        return not is_cloud or local_ip.startswith("127.") or hostname == "localhost"
+    except Exception:
+        return False
+
+# 2. Definisci DOPO gestisci_visite()
 def gestisci_visite():
-    # 1. Se siamo in ambiente locale (sviluppo), legge solo il conteggio senza incrementare
     if e_in_locale():
         try:
             with open(NOME_FILE_CONTATORE, "r") as f:
@@ -13,10 +27,27 @@ def gestisci_visite():
         except Exception:
             return 0
 
-    # 2. Crea il file JSON se non esiste ancora
     if not os.path.exists(NOME_FILE_CONTATORE):
         with open(NOME_FILE_CONTATORE, "w") as f:
             json.dump({"visite": 0}, f)
+
+    if "visita_conteggiata" not in st.session_state:
+        st.session_state["visita_conteggiata"] = True
+        try:
+            with open(NOME_FILE_CONTATORE, "r+") as f:
+                dati = json.load(f)
+                dati["visite"] += 1
+                f.seek(0)
+                json.dump(dati, f)
+                f.truncate()
+        except Exception:
+            pass
+
+    try:
+        with open(NOME_FILE_CONTATORE, "r") as f:
+            return json.load(f).get("visite", 0)
+    except Exception:
+        return 0
 
     # 3. Incrementa SOLO se questa specifica sessione non è ancora stata conteggiata
     if "visita_conteggiata" not in st.session_state:
