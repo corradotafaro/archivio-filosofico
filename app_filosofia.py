@@ -17,14 +17,16 @@ def e_in_locale():
 
 # 2. Gestione visite tramite API remota
 def gestisci_visite():
+    # URL di base dell'API per il tuo archivio
+    url_base = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite"
+
     # In locale legge soltanto senza incrementare
     if e_in_locale():
         try:
-            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(f"{url_base}/", headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 dati = json.loads(response.read().decode())
-                return dati.get("count", 0)
+                return dati.get("count", 4)
         except Exception:
             return 4
 
@@ -32,17 +34,24 @@ def gestisci_visite():
     if "visita_conteggiata" not in st.session_state:
         st.session_state["visita_conteggiata"] = True
         try:
-            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/up"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            # Tenta l'incremento ordinario
+            req = urllib.request.Request(f"{url_base}/up", headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 dati = json.loads(response.read().decode())
                 return dati.get("count", 4)
         except Exception:
-            return 4
+            # Se la chiave non esiste ancora sul server API, la inizializza a 5
+            try:
+                req = urllib.request.Request(f"{url_base}/set?count=5", headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req) as response:
+                    dati = json.loads(response.read().decode())
+                    return dati.get("count", 5)
+            except Exception:
+                return 4
     else:
+        # Sessione già conteggiata: legge soltanto il valore attuale
         try:
-            url = "https://api.counterapi.dev/v1/archivio-filosofico-corrado/visite/"
-            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            req = urllib.request.Request(f"{url_base}/", headers={'User-Agent': 'Mozilla/5.0'})
             with urllib.request.urlopen(req) as response:
                 dati = json.loads(response.read().decode())
                 return dati.get("count", 4)
