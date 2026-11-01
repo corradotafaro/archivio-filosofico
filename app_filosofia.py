@@ -240,13 +240,12 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
 # --- PIÈ DI PAGINA CON CONTATORE DI MEMORIA NATIVO ---
 # ------------------------------------------------------------------
 
-# 1. Utilizza la memoria condivisa del server Streamlit
+# 1. Utilizza la memoria condivisa del server Streamlit (impostata su 0 così la prima visita è 1)
 @st.cache_resource
-def inizializza_registro():
-    # Valore di partenza dell'archivio
-    return {"visite": 5}
+def inizializza_registro_v2():
+    return {"visite": 0}
 
-registro = inizializza_registro()
+registro = inizializza_registro_v2()
 
 # 2. Incrementa una sola volta per la sessione dell'utente corrente
 if "visita_registrata" not in st.session_state:
