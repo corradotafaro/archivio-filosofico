@@ -3,6 +3,7 @@ import json
 import random
 import os
 import base64
+import pypdf
 from streamlit_pdf_viewer import pdf_viewer
 
 NOME_FILE_CONTATORE = "contatore_visite.json"
@@ -88,82 +89,95 @@ st.sidebar.info(
     "vengono impiegati esclusivamente come supporto nella fase di revisione formale e correzione sintattica."
 )
 
-# --- SEZIONE 1: CERCA NELL'ARCHIVIO ---
+# --- SEZIONE 1: CERCA NELL'ARCHIVIO (Ricerca Full-Text nei PDF) ---
 if funzione_scelta == "Cerca nell'Archivio":
     st.title("🔍 Cerca nell'Archivio")
-    st.write("Inserisci un nome o un concetto per consultare il database e i relativi documenti PDF.")
+    st.write("Inserisci un autore, una citazione o un concetto per consultare il database e l'interno di tutti i saggi PDF.")
     
-    query = st.text_input("Inserisci il nome di un filosofo, un personaggio o un concetto:")
+    query = st.text_input("Cosa vuoi cercare nell'archivio?")
 
-    if query:
-        query_colore = query.lower()
-        risultati = []
+    if query and query.strip():
+        query_pulita = query.strip().lower()
         
+        # 1. Ricerca nelle schede del Database JSON
+        risultati_db = []
         for chiave, info in db.items():
             info_str = str(info).lower()
-            if query_colore in chiave.lower() or query_colore in info_str:
-                risultati.append((chiave, info))
+            if query_pulita in chiave.lower() or query_pulita in info_str:
+                risultati_db.append((chiave, info))
                 
-        if risultati:
-            st.success(f"Trovati {len(risultati)} risultati:")
-            for nome, dettagli in risultati:
-                with st.expander(f"📌 {nome}"):
-                    if isinstance(dettagli, dict):
-                        for k, v in dettagli.items():
-                            st.write(f"**{k.capitalize()}**: {v}")
-                    else:
-                        st.write(dettagli)
+        # 2. Ricerca Full-Text nel contenuto reale dei PDF
+        risultati_pdf = []
+        if os.path.exists(CARTELLA_APPROFONDIMENTI):
+            with st.spinner("Scansione in corso dei documenti dell'Archivio..."):
+                for f_name in os.listdir(CARTELLA_APPROFONDIMENTI):
+                    if f_name.endswith('.pdf'):
+                        percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
+                        try:
+                            reader = pypdf.PdfReader(percorso_completo)
+                            for num_pagina, pagina in enumerate(reader.pages, start=1):
+                                testo_pagina = pagina.extract_text() or ""
+                                if query_pulita in testo_pagina.lower():
+                                    # Estrae uno snippet (contesto attorno alla parola cercata)
+                                    idx = testo_pagina.lower().find(query_pulita)
+                                    inizio = max(0, idx - 60)
+                                    fine = min(len(testo_pagina), idx + 100)
+                                    estratto = testo_pagina[inizio:fine].replace("\n", " ")
+                                    
+                                    risultati_pdf.append({
+                                        "file_name": f_name,
+                                        "percorso": percorso_completo,
+                                        "pagina": num_pagina,
+                                        "estratto": estratto
+                                    })
+                        except Exception:
+                            continue
+
+        # --- VISUALIZZAZIONE RISULTATI ---
+        
+        # Tab 1: Risultati nel Database / Tab 2: Occorrenze nei PDF
+        tab_db, tab_pdf = st.tabs([
+            f"📌 Schede Database ({len(risultati_db)})", 
+            f"📄 Citazioni nei PDF ({len(risultati_pdf)})"
+        ])
+        
+        with tab_db:
+            if risultati_db:
+                for nome, dettagli in risultati_db:
+                    with st.expander(f"📌 {nome}"):
+                        if isinstance(dettagli, dict):
+                            for k, v in dettagli.items():
+                                st.write(f"**{k.capitalize()}**: {v}")
+                        else:
+                            st.write(dettagli)
+            else:
+                st.info("Nessuna scheda del database corrisponde direttamente alla ricerca.")
+
+        with tab_pdf:
+            if risultati_pdf:
+                st.success(f"Trovate {len(risultati_pdf)} occorrenze all'interno dei saggi:")
+                for res in risultati_pdf:
+                    f_name = res["file_name"]
+                    pag = res["pagina"]
+                    estratto = res["estratto"]
+                    percorso = res["percorso"]
                     
-                    st.divider()
-                    
-                    # Cerca sia i nuovi file .pdf che i vecchi .odt rimasti
-                    file_trovati = []
-                    if os.path.exists(CARTELLA_APPROFONDIMENTI):
-                        tutti_i_file = os.listdir(CARTELLA_APPROFONDIMENTI)
-                        for f_name in tutti_i_file:
-                            if (f_name.endswith('.pdf') or f_name.endswith('.odt')) and nome.lower() in f_name.lower():
-                                percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
-                                file_trovati.append((f_name, percorso_completo))
-                    
-                    if file_trovati:
-                        st.write(f"📄 **Approfondimenti disponibili ({len(file_trovati)}):**")
-                        for f_name, percorso_completo in sorted(file_trovati):
-                            col1, col2, col3 = st.columns([2, 1, 1])
-                            mo_testo = False
-                            
-                            with col1:
-                                st.write(f"🔹 {f_name}")
-                            with col2:
-                                if st.button("Leggi", key=f"read_{nome}_{f_name}"):
-                                    mo_testo = True
-                            with col3:
-                                mime_type = "application/pdf" if f_name.endswith('.pdf') else "application/vnd.oasis.opendocument.text"
-                                with open(percorso_completo, "rb") as f:
-                                    st.download_button(
-                                        label="Scarica",
-                                        data=f,
-                                        file_name=f_name,
-                                        mime=mime_type,
-                                        key=f"dl_{nome}_{f_name}"
-                                    )
-                            
-                            if mo_testo:
-                                st.write("")
-                                st.info(f"--- Visualizzazione: {f_name} ---")
-                                st.title(ottieni_titolo_pulito(f_name))
-                                st.divider()
-                                
-                                if f_name.endswith('.pdf'):
-                                    mostra_visualizzatore_pdf(percorso_completo)
-                                else:
-                                    st.warning("Questo file è ancora in formato .odt. Per visualizzarlo perfettamente senza errori, esportalo in .pdf su LibreOffice e caricalo su GitHub.")
-                                
-                                st.info("--- Fine Contenuto ---")
-                                st.write("")
-                    else:
-                        st.caption("Nessun file di approfondimento trovato automaticamente per questo autore.")
-        else:
-            st.warning("Nessun elemento trovato corrispondente alla ricerca.")
+                    with st.expander(f"📖 {ottieni_titolo_pulito(f_name)} — Pagina {pag}"):
+                        st.markdown(f"**Estratto dal testo:** *« ...{estratto}... »*")
+                        st.divider()
+                        
+                        col1, col2 = st.columns([1, 1])
+                        with col1:
+                            if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}"):
+                                mostra_visualizzatore_pdf(percorso)
+                        with col2:
+                            with open(percorso, "rb") as f:
+                                st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}")
+            else:
+                st.info("Nessuna occorrenza trovata all'interno dei testi PDF.")
+
+        if not risultati_db and not risultati_pdf:
+            st.warning("Nessun risultato trovato per la ricerca inserita.")
             
 # --- SEZIONE 2: L'ORACOLO ---
 elif funzione_scelta == "Invoca l'Oracolo":
