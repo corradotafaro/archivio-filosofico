@@ -4,6 +4,7 @@ import random
 import os
 import base64
 import pypdf
+import re
 from streamlit_pdf_viewer import pdf_viewer
 
 NOME_FILE_CONTATORE = "contatore_visite.json"
@@ -118,17 +119,21 @@ if funzione_scelta == "Cerca nell'Archivio":
                             for num_pagina, pagina in enumerate(reader.pages, start=1):
                                 testo_pagina = pagina.extract_text() or ""
                                 if query_pulita in testo_pagina.lower():
-                                    # Estrae uno snippet (contesto attorno alla parola cercata)
+                                    # Estrae uno snippet ed evidenzia la parola cercata in grassetto
                                     idx = testo_pagina.lower().find(query_pulita)
                                     inizio = max(0, idx - 60)
                                     fine = min(len(testo_pagina), idx + 100)
-                                    estratto = testo_pagina[inizio:fine].replace("\n", " ")
+                                    estratto_grezzo = testo_pagina[inizio:fine].replace("\n", " ")
+                                    
+                                    # Evidenzia il termine mantenendo maiuscole/minuscole originali del testo
+                                    pattern = re.compile(re.escape(query_pulita), re.IGNORECASE)
+                                    estratto_evidenziato = pattern.sub(lambda m: f"**{m.group(0)}**", estratto_grezzo)
                                     
                                     risultati_pdf.append({
                                         "file_name": f_name,
                                         "percorso": percorso_completo,
                                         "pagina": num_pagina,
-                                        "estratto": estratto
+                                        "estratto": estratto_evidenziato
                                     })
                         except Exception:
                             continue
