@@ -20,23 +20,15 @@ def carica_database():
     return {}
 
 db = carica_database()
-# --- FUNZIONE OTTIMIZZATA PER LA RESA VISIVA DEL PDF ---
+
+# --- FUNZIONE NATIVA PER LA VISUALIZZAZIONE DEL PDF (SICURA PER CHROME) ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
         with open(percorso_pdf, "rb") as f:
-            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+            pdf_bytes = f.read()
         
-        # L'opzione #view=FitH forza il browser ad adattare la pagina al 100% della larghezza
-        pdf_display = f'''
-            <iframe 
-                src="data:application/pdf;base64,{base64_pdf}#view=FitH" 
-                width="100%" 
-                height="700" 
-                type="application/pdf"
-                style="border: none; border-radius: 8px;">
-            </iframe>
-        '''
-        st.markdown(pdf_display, unsafe_allow_html=True)
+        # Renderizza il PDF in modo nativo su tela Canvas (evita i blocchi IFrame di Chrome)
+        pdf_viewer(input=pdf_bytes, height=750, render_text=True)
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
 # --- FUNZIONE DI APPOGGIO PER IL TITOLO ESTERNO ---
@@ -171,20 +163,16 @@ if funzione_scelta == "Cerca nell'Archivio":
                             with open(percorso, "rb") as f:
                                 st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}_{idx_res}")
                         
-                        # Rendering nativo e sicuro al 100% senza blocchi Chrome e senza tagli ai margini
+                        # Mostra il PDF usando la funzione nativa priva di IFrame
                         if mo_pdf:
                             st.write("")
-                            try:
-                                with open(percorso, "rb") as f:
-                                    pdf_bytes = f.read()
-                                pdf_viewer(input=pdf_bytes, height=750, render_text=True)
-                            except Exception as e:
-                                st.error(f"Errore nella lettura del file PDF: {e}")
+                            mostra_visualizzatore_pdf(percorso)
             else:
                 st.info("Nessuna occorrenza trovata all'interno dei testi PDF.")
 
         if not risultati_db and not risultati_pdf:
-            st.warning("Nessun risultato trovato per la ricerca inserita.")            
+            st.warning("Nessun risultato trovato per la ricerca inserita.")
+            
 # --- SEZIONE 2: L'ORACOLO ---
 elif funzione_scelta == "Invoca l'Oracolo":
     st.title("🔮 L'Oracolo")
