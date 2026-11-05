@@ -162,13 +162,24 @@ if funzione_scelta == "Cerca nell'Archivio":
                         st.divider()
                         
                         col1, col2 = st.columns([1, 1])
+                        mo_pdf = False
+                        
                         with col1:
                             if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}_{idx_res}"):
-                                # Richiama la funzione ottimizzata HTML/IFrame
-                                mostra_visualizzatore_pdf(percorso)
+                                mo_pdf = True
                         with col2:
                             with open(percorso, "rb") as f:
                                 st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}_{idx_res}")
+                        
+                        # Rendering nativo e sicuro al 100% senza blocchi Chrome e senza tagli ai margini
+                        if mo_pdf:
+                            st.write("")
+                            try:
+                                with open(percorso, "rb") as f:
+                                    pdf_bytes = f.read()
+                                pdf_viewer(input=pdf_bytes, height=750, render_text=True)
+                            except Exception as e:
+                                st.error(f"Errore nella lettura del file PDF: {e}")
             else:
                 st.info("Nessuna occorrenza trovata all'interno dei testi PDF.")
 
