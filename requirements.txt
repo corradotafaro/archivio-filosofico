@@ -1,2 +1,3 @@
-odfpy
+streamlit
 streamlit-pdf-viewer
+pypdf
