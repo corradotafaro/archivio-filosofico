@@ -20,35 +20,25 @@ def carica_database():
     return {}
 
 db = carica_database()
-# --- FUNZIONE OPTIMIZZATA PER LA RESA VISIVA E I COMANDI ---
+# --- FUNZIONE OTTIMIZZATA PER LA RESA VISIVA DEL PDF ---
 def mostra_visualizzatore_pdf(percorso_pdf):
     try:
         with open(percorso_pdf, "rb") as f:
-            pdf_data = f.read()
+            base64_pdf = base64.b64encode(f.read()).decode('utf-8')
         
-        # Inseriamo un contenitore CSS per evitare che la barra dello zoom venga tagliata
-        st.markdown(
-            """
-            <style>
-            div[data-testid="stCustomComponentV1"] {
-                display: flex;
-                justify-content: center;
-                padding-top: 10px;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-
-        # Rimuovendo 'width', il componente si adatta perfettamente alla pagina
-        pdf_viewer(
-            input=pdf_data, 
-            height=850,
-            render_text=True
-        )
+        # L'opzione #view=FitH forza il browser ad adattare la pagina al 100% della larghezza
+        pdf_display = f'''
+            <iframe 
+                src="data:application/pdf;base64,{base64_pdf}#view=FitH" 
+                width="100%" 
+                height="700" 
+                type="application/pdf"
+                style="border: none; border-radius: 8px;">
+            </iframe>
+        '''
+        st.markdown(pdf_display, unsafe_allow_html=True)
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
-
 # --- FUNZIONE DI APPOGGIO PER IL TITOLO ESTERNO ---
 def ottieni_titolo_pulito(nome_file):
     nome_pulito = nome_file.replace(".pdf", "").replace(".odt", "").replace("_", " ")
@@ -138,7 +128,7 @@ if funzione_scelta == "Cerca nell'Archivio":
                         except Exception:
                             continue
 
-        # --- VISUALIZZAZIONE RISULTATI ---
+# --- VISUALIZZAZIONE RISULTATI ---
         
         # Tab 1: Risultati nel Database / Tab 2: Occorrenze nei PDF
         tab_db, tab_pdf = st.tabs([
@@ -173,10 +163,9 @@ if funzione_scelta == "Cerca nell'Archivio":
                         
                         col1, col2 = st.columns([1, 1])
                         with col1:
-                            # Chiave univoca per evitare conflitti quando la stessa pagina appare più volte
                             if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}_{idx_res}"):
-                                # Visualizzazione del PDF a larghezza contenitore ottimizzata
-                                pdf_viewer(percorso, width=700)
+                                # Richiama la funzione ottimizzata HTML/IFrame
+                                mostra_visualizzatore_pdf(percorso)
                         with col2:
                             with open(percorso, "rb") as f:
                                 st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}_{idx_res}")
