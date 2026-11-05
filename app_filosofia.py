@@ -161,7 +161,7 @@ if funzione_scelta == "Cerca nell'Archivio":
         with tab_pdf:
             if risultati_pdf:
                 st.success(f"Trovate {len(risultati_pdf)} occorrenze all'interno dei saggi:")
-                for res in risultati_pdf:
+                for idx_res, res in enumerate(risultati_pdf):
                     f_name = res["file_name"]
                     pag = res["pagina"]
                     estratto = res["estratto"]
@@ -173,17 +173,18 @@ if funzione_scelta == "Cerca nell'Archivio":
                         
                         col1, col2 = st.columns([1, 1])
                         with col1:
-                            if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}"):
-                                mostra_visualizzatore_pdf(percorso)
+                            # Chiave univoca per evitare conflitti quando la stessa pagina appare più volte
+                            if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}_{idx_res}"):
+                                # Visualizzazione del PDF a larghezza contenitore ottimizzata
+                                pdf_viewer(percorso, width=700)
                         with col2:
                             with open(percorso, "rb") as f:
-                                st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}")
+                                st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}_{idx_res}")
             else:
                 st.info("Nessuna occorrenza trovata all'interno dei testi PDF.")
 
         if not risultati_db and not risultati_pdf:
-            st.warning("Nessun risultato trovato per la ricerca inserita.")
-            
+            st.warning("Nessun risultato trovato per la ricerca inserita.")            
 # --- SEZIONE 2: L'ORACOLO ---
 elif funzione_scelta == "Invoca l'Oracolo":
     st.title("🔮 L'Oracolo")
