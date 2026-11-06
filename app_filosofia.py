@@ -195,7 +195,7 @@ elif funzione_scelta == "Invoca l'Oracolo":
 # --- SEZIONE 3: SFOGLIA APPROFONDIMENTI ---
 elif funzione_scelta == "Sfoglia Approfondimenti":
     st.title("📁 Tutti gli Approfondimenti dell'Archivio")
-    st.write("Ecco la lista completa dei file presenti nella tua cartella (sono supportati sia PDF che ODT).")
+    st.write("Ecco la lista completa dei file presenti nella tua cartella (sono supportati solo PDF).")
     
     if os.path.exists(CARTELLA_APPROFONDIMENTI):
         # Legge sia i file PDF che i vecchi ODT
