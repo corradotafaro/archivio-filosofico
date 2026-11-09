@@ -49,7 +49,7 @@ st.sidebar.markdown("Naviga tra le funzioni dell'app")
 
 funzione_scelta = st.sidebar.radio(
     "Seleziona un'azione:",
-    ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti", "Contributi"]
+    ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti", "Contributi di Terzi"]
 )
 # --- NOTA PERSONALE E PRESENTAZIONE ---
 st.sidebar.divider()
