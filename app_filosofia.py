@@ -31,6 +31,7 @@ def mostra_visualizzatore_pdf(percorso_pdf):
         pdf_viewer(input=pdf_bytes, height=750, render_text=True)
     except Exception as e:
         st.error(f"Impossibile visualizzare il file PDF: {e}")
+
 # --- FUNZIONE DI APPOGGIO PER IL TITOLO ESTERNO ---
 def ottieni_titolo_pulito(nome_file):
     nome_pulito = nome_file.replace(".pdf", "").replace(".odt", "").replace("_", " ")
@@ -40,12 +41,16 @@ def ottieni_titolo_pulito(nome_file):
 
 # --- CARTELLA APPROFONDIMENTI ---
 CARTELLA_APPROFONDIMENTI = "approfondimenti"
+CARTELLA_TERZI = "approfondimenti_di_terzi"
 
-# --- MENU LATERALE (SIDEBAR) ---
+# --- MENU DI NAVIGAZIONE SIDEBAR ---
 st.sidebar.title("📚 Menu Archivio")
-st.sidebar.write("Naviga tra le funzioni dell'app")
-funzione_scelta = st.sidebar.radio("Seleziona un'azione:", ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti"])
+st.sidebar.markdown("Naviga tra le funzioni dell'app")
 
+funzione_scelta = st.sidebar.radio(
+    "Seleziona un'azione:",
+    ["Cerca nell'Archivio", "Invoca l'Oracolo", "Sfoglia Approfondimenti", "Contributi di Terzi"]
+)
 # --- NOTA PERSONALE E PRESENTAZIONE ---
 st.sidebar.divider()
 st.sidebar.markdown("### 🏛️ Il Progetto")
@@ -72,42 +77,48 @@ st.sidebar.info(
     "vengono impiegati esclusivamente come supporto nella fase di revisione formale e correzione sintattica."
 )
 
-# --- SEZIONE 1: CERCA NELL'ARCHIVIO (Ricerca Full-Text nei PDF) ---
+# --- SEZIONE: CERCA NELL'ARCHIVIO ---
 if funzione_scelta == "Cerca nell'Archivio":
-    st.title("🔍 Cerca nell'Archivio")
-    st.write("Inserisci un autore, una citazione o un concetto per consultare il database e l'interno di tutti i saggi PDF.")
+    st.title("🔎 Cerca nell'Archivio Filosofico")
     
-    query = st.text_input("Cosa vuoi cercare nell'archivio?")
-
-    if query and query.strip():
+    query = st.text_input("Inserisci un termine o un concetto da cercare (es. atarassia, Kant, etica):")
+    
+    if query:
         query_pulita = query.strip().lower()
-        
-        # 1. Ricerca nelle schede del Database JSON
         risultati_db = []
-        for chiave, info in db.items():
-            info_str = str(info).lower()
-            if query_pulita in chiave.lower() or query_pulita in info_str:
-                risultati_db.append((chiave, info))
-                
-        # 2. Ricerca Full-Text nel contenuto reale dei PDF
         risultati_pdf = []
-        if os.path.exists(CARTELLA_APPROFONDIMENTI):
-            with st.spinner("Scansione in corso dei documenti dell'Archivio..."):
-                for f_name in os.listdir(CARTELLA_APPROFONDIMENTI):
-                    if f_name.endswith('.pdf'):
-                        percorso_completo = os.path.join(CARTELLA_APPROFONDIMENTI, f_name)
+        
+        # 1. Ricerca nel Database JSON
+        for chiave, valore in db.items():
+            if query_pulita in chiave.lower():
+                risultati_db.append((chiave, valore))
+            elif isinstance(valore, dict):
+                for k, v in valore.items():
+                    if query_pulita in str(v).lower():
+                        risultati_db.append((chiave, valore))
+                        break
+        
+        # 2. Ricerca Full-Text nei PDF (Scansione di entrambe le cartelle)
+        cartelle_da_scansionare = [
+            (CARTELLA_APPROFONDIMENTI, "Archivio"),
+            (CARTELLA_TERZI, "Contributo di Terzi")
+        ]
+        
+        for dir_path, origine in cartelle_da_scansionare:
+            if os.path.exists(dir_path):
+                for f_name in os.listdir(dir_path):
+                    if f_name.endswith(".pdf"):
+                        percorso_completo = os.path.join(dir_path, f_name)
                         try:
-                            reader = pypdf.PdfReader(percorso_completo)
+                            reader = PdfReader(percorso_completo)
                             for num_pagina, pagina in enumerate(reader.pages, start=1):
-                                testo_pagina = pagina.extract_text() or ""
-                                if query_pulita in testo_pagina.lower():
-                                    # Estrae uno snippet ed evidenzia la parola cercata in grassetto
+                                testo_pagina = pagina.extract_text()
+                                if testo_pagina and query_pulita in testo_pagina.lower():
                                     idx = testo_pagina.lower().find(query_pulita)
                                     inizio = max(0, idx - 60)
                                     fine = min(len(testo_pagina), idx + 100)
                                     estratto_grezzo = testo_pagina[inizio:fine].replace("\n", " ")
                                     
-                                    # Evidenzia il termine mantenendo maiuscole/minuscole originali del testo
                                     pattern = re.compile(re.escape(query_pulita), re.IGNORECASE)
                                     estratto_evidenziato = pattern.sub(lambda m: f"**{m.group(0)}**", estratto_grezzo)
                                     
@@ -115,14 +126,13 @@ if funzione_scelta == "Cerca nell'Archivio":
                                         "file_name": f_name,
                                         "percorso": percorso_completo,
                                         "pagina": num_pagina,
-                                        "estratto": estratto_evidenziato
+                                        "estratto": estratto_evidenziato,
+                                        "origine": origine
                                     })
                         except Exception:
                             continue
 
-# --- VISUALIZZAZIONE RISULTATI ---
-        
-        # Tab 1: Risultati nel Database / Tab 2: Occorrenze nei PDF
+        # --- VISUALIZZAZIONE RISULTATI ---
         tab_db, tab_pdf = st.tabs([
             f"📌 Schede Database ({len(risultati_db)})", 
             f"📄 Citazioni nei PDF ({len(risultati_pdf)})"
@@ -148,14 +158,20 @@ if funzione_scelta == "Cerca nell'Archivio":
                     pag = res["pagina"]
                     estratto = res["estratto"]
                     percorso = res["percorso"]
+                    origine = res["origine"]
                     
-                    with st.expander(f"📖 {ottieni_titolo_pulito(f_name)} — Pagina {pag}"):
+                    titolo_expander = f"📖 {ottieni_titolo_pulito(f_name)} — Pagina {pag}"
+                    if origine == "Contributo di Terzi":
+                        titolo_expander = f"✨ [Contributo] {ottieni_titolo_pulito(f_name)} — Pagina {pag}"
+                    
+                    with st.expander(titolo_expander):
+                        if origine == "Contributo di Terzi":
+                            st.caption("✨ *Saggio appartenente alla sezione Contributi di Terzi*")
                         st.markdown(f"**Estratto dal testo:** *« ...{estratto}... »*")
                         st.divider()
                         
                         col1, col2 = st.columns([1, 1])
                         mo_pdf = False
-                        
                         with col1:
                             if st.button("Leggi PDF", key=f"read_ft_{f_name}_{pag}_{idx_res}"):
                                 mo_pdf = True
@@ -163,7 +179,6 @@ if funzione_scelta == "Cerca nell'Archivio":
                             with open(percorso, "rb") as f:
                                 st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_ft_{f_name}_{pag}_{idx_res}")
                         
-                        # Mostra il PDF usando la funzione nativa priva di IFrame
                         if mo_pdf:
                             st.write("")
                             mostra_visualizzatore_pdf(percorso)
@@ -244,6 +259,34 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
 # --- CODICE ESISTENTE DELLA TUA APP ---
 # Qui c'è la logica del tuo archivio, le schede, la lettura dei PDF, ecc.
 # ...
+# --- SEZIONE: CONTRIBUTI DI TERZI ---
+elif funzione_scelta == "Contributi di Terzi":
+    st.title("✨ Contributi Filosofici di Terzi")
+    st.write("Raccolta di saggi, studi e approfondimenti condivisi.")
+    st.divider()
+    
+    if os.path.exists(CARTELLA_TERZI):
+        files_pdf = [f for f in os.listdir(CARTELLA_TERZI) if f.endswith(".pdf")]
+        if files_pdf:
+            for idx, f_name in enumerate(files_pdf):
+                percorso = os.path.join(CARTELLA_TERZI, f_name)
+                with st.expander(f"📄 {ottieni_titolo_pulito(f_name)}"):
+                    col1, col2 = st.columns([1, 1])
+                    mo_pdf_terzi = False
+                    with col1:
+                        if st.button("Leggi PDF", key=f"read_terzi_{idx}"):
+                            mo_pdf_terzi = True
+                    with col2:
+                        with open(percorso, "rb") as f:
+                            st.download_button("Scarica PDF", f, file_name=f_name, key=f"dl_terzi_{idx}")
+                    
+                    if mo_pdf_terzi:
+                        st.write("")
+                        mostra_visualizzatore_pdf(percorso)
+        else:
+            st.info("Nessun documento PDF presente nella cartella 'approfondimenti_di_terzi'.")
+    else:
+        st.warning("La cartella 'approfondimenti_di_terzi' non è stata ancora creata.")
 # ------------------------------------------------------------------
 # --- PIÈ DI PAGINA CON CONTATORE DI MEMORIA NATIVO ---
 # ------------------------------------------------------------------
