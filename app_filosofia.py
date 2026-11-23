@@ -36,7 +36,7 @@ def mostra_visualizzatore_pdf(percorso_pdf):
 
 # --- FUNZIONE DI APPOGGIO PER IL TITOLO ESTERNO ---
 def ottieni_titolo_pulito(nome_file):
-    nome_pulito = nome_file.replace(".pdf", "").replace(".odt", "").replace("_", " ")
+    nome_pulito = re.sub(r"\.(pdf|odt)$", "", nome_file, flags=re.IGNORECASE).replace("_", " ")
     if nome_pulito.lower().startswith("zz "):
         nome_pulito = nome_pulito[3:]
     return nome_pulito.capitalize()
@@ -80,13 +80,26 @@ st.sidebar.info(
 )
 
 # --- FUNZIONI DI SUPPORTO PER LA RICERCA ---
+def pulisci(testo):
+    """Uniforma il testo: ricompone gli accenti, riunisce le parole spezzate a fine riga, normalizza gli spazi."""
+    testo = unicodedata.normalize("NFC", str(testo))
+    testo = re.sub(r"-\s*\n\s*", "", testo)
+    return re.sub(r"\s+", " ", testo).strip()
+
+def senza_accenti(testo):
+    """Minuscolo e senza accenti, mantenendo la stessa lunghezza del testo originale (carattere per carattere)."""
+    out = []
+    for ch in testo:
+        if ch in "’‘":
+            out.append("'")
+            continue
+        base = "".join(c for c in unicodedata.normalize("NFD", ch.lower())
+                       if unicodedata.category(c) != "Mn")
+        out.append(base[0] if base else ch)
+    return "".join(out)
+
 def normalizza(testo):
-    testo = unicodedata.normalize("NFD", str(testo).lower())
-    testo = "".join(c for c in testo if unicodedata.category(c) != "Mn")
-    testo = testo.replace("’", "'").replace("‘", "'")
-    testo = re.sub(r"-\s*\n\s*", "", testo)   # parole spezzate a fine riga
-    testo = re.sub(r"\s+", " ", testo)        # spazi e a capo uniformi
-    return testo.strip()
+    return senza_accenti(pulisci(testo))
 
 def testo_ricorsivo(valore):
     """Estrae tutto il testo da stringhe, liste e dizionari annidati."""
@@ -96,7 +109,7 @@ def testo_ricorsivo(valore):
         return " ".join(testo_ricorsivo(v) for v in valore)
     return str(valore)
 
-@st.cache_data(show_spinner="Indicizzo i PDF (solo la prima volta)...")
+@st.cache_data(ttl=3600, show_spinner="Indicizzo i PDF (solo la prima volta)...")
 def indicizza_pdf(cartelle):
     indice, problemi = [], []
     for dir_path, origine in cartelle:
@@ -115,8 +128,10 @@ def indicizza_pdf(cartelle):
                     if not t.strip():
                         vuote += 1
                         continue
+                    t_pulito = pulisci(t)
                     indice.append({"file_name": f_name, "percorso": percorso,
-                                   "pagina": n, "testo": t, "norm": normalizza(t),
+                                   "pagina": n, "testo": t_pulito,
+                                   "norm": senza_accenti(t_pulito),
                                    "origine": origine})
                 if vuote == len(reader.pages):
                     problemi.append(f"{f_name}: nessun testo estraibile (forse scansione)")
@@ -146,8 +161,11 @@ if funzione_scelta == "Cerca nell'Archivio":
         for p in indice:
             if q in p["norm"]:
                 idx = p["norm"].find(q)
-                estratto = p["norm"][max(0, idx - 80): idx + len(q) + 120]
-                estratto = re.sub(re.escape(q), lambda m: f"**{m.group(0)}**", estratto)
+                t = p["testo"]
+                inizio = max(0, idx - 80)
+                fine = min(len(t), idx + len(q) + 120)
+                estratto = (t[inizio:idx] + "**" + t[idx:idx + len(q)] + "**"
+                            + t[idx + len(q):fine])
                 risultati_pdf.append({**p, "estratto": estratto})
 
         with st.expander("Diagnostica (file non leggibili o cartelle mancanti)"):
@@ -237,7 +255,8 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
     
     if os.path.exists(CARTELLA_APPROFONDIMENTI):
         # Legge sia i file PDF che i vecchi ODT
-        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI) if f.lower().endswith('.pdf') or f.lower().endswith('.odt')]
+        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI)
+                         if f.lower().endswith('.pdf') or f.lower().endswith('.odt')]
         
         if file_presenti:
             for file_saggio in sorted(file_presenti):
@@ -252,7 +271,7 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
                     if st.button("Leggi", key=f"sfoglia_read_{file_saggio}"):
                         mostra_testo_sfoglia = True
                 with col3:
-                    mime_type = "application/pdf" if file_saggio.endswith('.pdf') else "application/vnd.oasis.opendocument.text"
+                    mime_type = "application/pdf" if file_saggio.lower().endswith('.pdf') else "application/vnd.oasis.opendocument.text"
                     with open(percorso_file, "rb") as f:
                         st.download_button(
                             label="Scarica",
@@ -268,7 +287,7 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
                     st.title(ottieni_titolo_pulito(file_saggio))
                     st.divider()
                     
-                    if file_saggio.endswith('.pdf'):
+                    if file_saggio.lower().endswith('.pdf'):
                         mostra_visualizzatore_pdf(percorso_file)
                     else:
                         st.warning("Questo file è in formato .odt. Per visualizzarlo perfettamente senza omissioni, esportalo in formato .pdf da LibreOffice Writer e caricalo su GitHub.")
