@@ -129,7 +129,7 @@ if funzione_scelta == "Cerca nell'Archivio":
     st.title("🔎 Cerca nell'Archivio Filosofico")
     query = st.text_input("Inserisci un termine o un concetto da cercare (es. atarassia, Kant, etica):")
 
-    if query:
+    if query and query.strip():
         q = normalizza(query)
         risultati_db, risultati_pdf = [], []
 
@@ -237,7 +237,7 @@ elif funzione_scelta == "Sfoglia Approfondimenti":
     
     if os.path.exists(CARTELLA_APPROFONDIMENTI):
         # Legge sia i file PDF che i vecchi ODT
-        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI) if f.endswith('.pdf') or f.endswith('.odt')]
+        file_presenti = [f for f in os.listdir(CARTELLA_APPROFONDIMENTI) if f.lower().endswith('.pdf') or f.lower().endswith('.odt')]
         
         if file_presenti:
             for file_saggio in sorted(file_presenti):
@@ -287,7 +287,7 @@ elif funzione_scelta == "Contributi di Terzi":
     st.divider()
     
     if os.path.exists(CARTELLA_TERZI):
-        files_pdf = [f for f in os.listdir(CARTELLA_TERZI) if f.endswith(".pdf")]
+        files_pdf = [f for f in os.listdir(CARTELLA_TERZI) if f.lower().endswith(".pdf")]
         if files_pdf:
             for idx, f_name in enumerate(files_pdf):
                 percorso = os.path.join(CARTELLA_TERZI, f_name)
